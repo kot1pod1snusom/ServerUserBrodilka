@@ -11,6 +11,9 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Reflection.Metadata;
 using Newtonsoft.Json.Linq;
 using System.Data;
+using System.Security.Claims;
+using System.Diagnostics;
+using System.Net.WebSockets;
 
 class UserClient
 {
@@ -80,19 +83,23 @@ class Server
 {
     public static List<UserClient> Clients = new List<UserClient>();
     public static List<User> AllUsers = new List<User>();
+    private static int OnlinePlayersCount = 0;
+    private static readonly object lockObject = new object(); 
 
     public static async Task ProcessClient(TcpClient client)
     {
+        lock (lockObject) 
+        {
+            OnlinePlayersCount = Clients.Count;
+        }
+
         bool UserOnServer = true;
-        while (UserOnServer == true)
+        while (UserOnServer)
         {
             try
             {
-                //Есть вариант добвыить в пользователя инт с количеством подключенных на данный момент пользователей и везде заменить в этой функции на этот инт
                 var stream = client.GetStream();
-
                 List<byte> bytes = new List<byte>();
-
                 int bytesRead = 0;
 
                 while ((bytesRead = stream.ReadByte()) != '\0')
@@ -101,54 +108,46 @@ class Server
                 }
                 bytes.Add((byte)'\0');
 
-
                 User user = Newtonsoft.Json.JsonConvert.DeserializeObject<User>(Encoding.UTF8.GetString(bytes.ToArray()));
                 Console.WriteLine($"{Encoding.UTF8.GetString(bytes.ToArray())}");
 
                 if (user.OnServerStatus == User.OflineOnlineStatus.Offline)
                 {
-                    for (int i = 0; i < Clients.Count; i++)
-                    {
-                        if (Clients[i].user.Id == user.Id)
+                    lock (lockObject)                     {
+                        for (int i = 0; i < Clients.Count; i++)
                         {
-                            Clients.RemoveAt(i);
-                             
-                            PutUsersInFile();
-                            UserOnServer = false;
+                            if (Clients[i].user.Id == user.Id)
+                            {
+                                Clients.RemoveAt(i);
+                                OnlinePlayersCount--;
+                                PutUsersInFile();
+                                UserOnServer = false;
+                                break;                            }
                         }
                     }
                 }
 
-                for (int i = 0; i < Clients.Count; i++)
+                lock (lockObject) 
                 {
-                    if (client.Connected)
+                    for (int i = 0; i < Clients.Count; i++)
                     {
-                        var sendMessageStream = Clients[i].tcpClient.GetStream();
-                        _ = sendMessageStream.WriteAsync(bytes.ToArray());
+                        if (client.Connected)
+                        {
+                            var sendMessageStream = Clients[i].tcpClient.GetStream();
+                            _ = sendMessageStream.WriteAsync(bytes.ToArray());
+                        }
                     }
                 }
-
 
                 bytes.Clear();
             }
             catch (Exception)
             {
-                Console.WriteLine("ВСЁ ПОШЛО ПО ПИЗ........");
+                Console.WriteLine("An error occurred.");
                 return;
-            }
-            
-        };
-
-        void ChangeStatus(User us) {
-            for (int i = 0; i < AllUsers.Count; i++)
-            {
-
             }
         }
     }
-
-
-   
 
     public static void PutUsersInFile()
     {
@@ -162,6 +161,9 @@ class Server
         AllUsers = Newtonsoft.Json.JsonConvert.DeserializeObject<List<User>>(fileRead);
     }
 
+
+
+
     public static async Task Main(string[] args)
     {
         TcpListener tcpListener = new TcpListener(IPAddress.Parse("26.136.90.213"), 9010);
@@ -170,15 +172,12 @@ class Server
         GetUsersFromFile();
 
         User us = null;
-
-
         
-
         while (true)
         {
             try
             {
-
+                
                 TcpClient tcpClient = await tcpListener.AcceptTcpClientAsync();
                 await Console.Out.WriteLineAsync("Client connected..");
 
@@ -186,7 +185,6 @@ class Server
                 PutUsersInFile();
 
                 Clients.Add(new UserClient() { tcpClient = tcpClient,user = us,});
-                
                 _ = Task.Run(async () => await ProcessClient(Clients[Clients.Count - 1].tcpClient));
 
             }

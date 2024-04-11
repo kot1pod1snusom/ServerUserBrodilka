@@ -247,6 +247,12 @@ class Client
                 bool isContain = false;
                 for (int i = 0; i < Users.Count; i++)
                 {
+                    if (Users[i].Id == user.Id && (user.X == -1 && user.Y == -1 && user.Skin == ' '))
+                    {
+                        Users.RemoveAt(i);
+                        break;                      
+                    }
+
                     if (Users[i].Id == user.Id)
                     {
                         if (OpenConsole == false) ClearPreviousPosition(Users[i]);
@@ -296,6 +302,7 @@ class Client
         OpenConsole = false;
         Console.Clear();
         Map.OutputField();
+        Console.WriteLine(" ");
         Console.WriteLine("Нажмите Enter чтобы открыть консоль");
         Console.WriteLine("Нажмите Esc чтобы выйти из игры");
     }
@@ -303,8 +310,10 @@ class Client
     static void GameExit(ref User me)
     {
         CloseGameOrNot = true;
-        me.X = -2;
-        me.Y = -2;
+        me.X = 0;
+        me.Y = 0;
+        me.Skin = '#';
+        me.Color = ConsoleColor.Green;
         me.OnServerStatus = User.OflineOnlineStatus.Offline;
 
     }
@@ -406,8 +415,9 @@ class Client
         Users.Add(user);
         Map.GenerateMap(20, 20);
         Map.OutputField();
-        //Console.WriteLine("Нажмите Enter чтобы открыть консоль");
-        //Console.WriteLine("Нажмите Esc чтобы выйти из игры");
+        Console.WriteLine(' ');
+        Console.WriteLine("Нажмите Enter чтобы открыть консоль");
+        Console.WriteLine("Нажмите Esc чтобы выйти из игры");
 
 
         _ = Task.Run(async () => await GetMessage(tcpClient));

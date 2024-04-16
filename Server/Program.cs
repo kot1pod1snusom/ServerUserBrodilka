@@ -113,7 +113,7 @@ class Server
 
                 if (user.OnServerStatus == User.OflineOnlineStatus.Offline)
                 {
-                    lock (lockObject)                     {
+                    lock (lockObject)  {
                         for (int i = 0; i < Clients.Count; i++)
                         {
                             if (Clients[i].user.Id == user.Id)
@@ -122,7 +122,8 @@ class Server
                                 OnlinePlayersCount--;
                                 PutUsersInFile();
                                 UserOnServer = false;
-                                break;                            }
+                                break;                            
+                            }
                         }
                     }
                 }
@@ -182,6 +183,7 @@ class Server
                 await Console.Out.WriteLineAsync("Client connected..");
 
                 Registr(tcpClient);
+                us.OnServerStatus = User.OflineOnlineStatus.OnServer;
                 PutUsersInFile();
 
                 Clients.Add(new UserClient() { tcpClient = tcpClient,user = us,});
@@ -221,11 +223,12 @@ class Server
                 int count = 0;
                 for (int i = 0; i < AllUsers.Count; i++)
                 {
+                    //База данных не обновляется из-за чего он и пускает на сервер двух одинаковых пользователей
                     if (AllUsers[i].email == user.email && AllUsers[i].password == user.password)
                     {
                         if (user.NewPlayerOrNot == false)
                         {
-                            if (user.OnServerStatus == User.OflineOnlineStatus.Offline)
+                            if (Clients.Find(x => x.user.Id == AllUsers[i].Id) == null)
                             {
                                 user.statusLogin = User.LoginStatus.LogIn;
                                 logIn = true;

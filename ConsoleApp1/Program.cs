@@ -68,10 +68,6 @@ class User : Block
         get => Password;
     }
 
-
-   
-
-
     public override char Skin { 
         get => base.Skin;
         set
@@ -84,9 +80,13 @@ class User : Block
 }
 class Map
 {
+    public static int height;
+    public static int width;
     public static List<Block> field = new List<Block>();
     public static void GenerateMap(int height, int wight)
     {
+        Map.height = height;
+        Map.width = wight;
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < wight; x++)
@@ -204,17 +204,42 @@ class UserConsole {
 }
 
 
+//List players near map
+interface IPlayers
+{
+    public void PlayersOut(User player, int count)
+    {
+        Console.SetCursorPosition(Map.width + 1, count);
+        if (count == 1) Console.Write("(you) ");
+
+        if (player.Skin != ' ') Console.WriteLine($"{player.name} - Skin: {player.Skin}, Color - {player.Color}");
+        else Console.WriteLine("                                                                                                                            ");
+
+    }
+}
+
+
 class Client
 {
     private static bool OpenConsole = false;
     private static bool CloseGameOrNot = false;
     public static List<User> Users = new List<User>();
 
+
     public static void ClearPreviousPosition(User user)
     {
         Console.SetCursorPosition(user.X, user.Y);
         Console.ForegroundColor = ConsoleColor.Black;
         Console.Write(' ');
+    }
+
+    public static void PlayersOut(User player, int count)
+    {
+        Console.SetCursorPosition(Map.width + 1, count);
+        if (count == 1) Console.Write("(you) ");
+
+        if (player.Skin != ' ') Console.WriteLine($"{player.name} - Skin: {player.Skin}, Color - {player.Color}");
+        else Console.WriteLine(" ");
     }
 
     public static void WriteCurrentPosition(User user)
@@ -247,6 +272,7 @@ class Client
                 bool isContain = false;
                 for (int i = 0; i < Users.Count; i++)
                 {
+                    PlayersOut(user, i + 1);
                     if (Users[i].Id == user.Id && (user.X == -1 && user.Y == -1 && user.Skin == ' '))
                     {
                         Users.RemoveAt(i);
@@ -315,7 +341,6 @@ class Client
         me.Skin = '#';
         me.Color = ConsoleColor.Green;
         me.OnServerStatus = User.OflineOnlineStatus.Offline;
-
     }
 
 

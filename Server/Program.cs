@@ -167,8 +167,9 @@ class Server
 
     public static async Task Main(string[] args)
     {
-        TcpListener tcpListener = new TcpListener(IPAddress.Parse("26.136.90.213"), 9010);
+        TcpListener tcpListener = new TcpListener(IPAddress.Parse("26.64.111.48"), 9010);
         tcpListener.Start();
+
         Console.WriteLine("Server started..");
         GetUsersFromFile();
 

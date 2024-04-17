@@ -12,196 +12,7 @@ using Newtonsoft.Json.Linq;
 using System.Globalization;
 using System.Drawing;
 using System.Runtime.CompilerServices;
-
-class Block
-{
-    public virtual char Skin { get; set; }
-    public ConsoleColor Color { get; set; }
-    public int X { get; set; }
-    public int Y { get; set; }
-
-    public Status status = Status.BORDER;
-    public enum Status
-    {
-        BORDER, VOID, PLAYER
-    }
-}
-class User : Block
-{
-    public enum OflineOnlineStatus{ 
-        
-        Offline,
-        OnServer,
-    }
-    public OflineOnlineStatus OnServerStatus;
-
-    public enum LoginStatus
-    {
-        LogIn,
-        WrongPasswordOrEmail,
-        NameIsOccupied,
-        EmailIsOccupied,
-        ThisUserOnServer
-    }
-    public LoginStatus statusLogin;
-
-
-    public string name;
-    public string email;
-    public bool NewPlayerOrNot;
-
-    
-
-    private string Password;
-    public string password {
-        set
-        {
-            var crypt = new SHA256Managed();
-            string hash = "";
-            byte[] crypto = crypt.ComputeHash(Encoding.ASCII.GetBytes(value));
-            foreach (byte theByte in crypto)
-            {
-                hash += theByte.ToString("x2");
-            }
-            Password = hash;
-        }
-        get => Password;
-    }
-
-    public override char Skin { 
-        get => base.Skin;
-        set
-        {
-            if (base.Skin == ' ') base.Skin = '0';
-            else base.Skin = value;
-        }
-    }
-    public int Id { get; set; }
-}
-class Map
-{
-    public static int height;
-    public static int width;
-    public static List<Block> field = new List<Block>();
-    public static void GenerateMap(int height, int wight)
-    {
-        Map.height = height;
-        Map.width = wight;
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < wight; x++)
-            {
-                if (x == 0 || y == 0 || x == wight - 1 || y == height - 1)
-                {
-                    field.Add(new Block() { X = x, Y = y, Skin = '#', Color = ConsoleColor.Green, status = Block.Status.BORDER });
-                }
-                else
-                {
-                    field.Add(new Block() { X = x, Y = y, Skin = ' ', Color = ConsoleColor.Green, status = Block.Status.VOID });
-                }
-            }
-        }
-    }
-    public static void OutputField()
-    {
-        for (int i = 0; i < field.Count; i++)
-        {
-            Console.SetCursorPosition(field[i].X, field[i].Y);
-            Console.ForegroundColor = field[i].Color;
-            Console.Write(field[i].Skin);
-        }
-    }
-}
-
-
-
-
-class UserConsole {
-    private void ChangeSymbol(ref User me)
-    {
-        bool exit = false;
-        while (exit != true)
-        {
-            Console.Clear();
-            Console.WriteLine($"Your symbol now {me.Skin}");
-            Console.WriteLine("Введите 1 чтобы поменять символ");
-            Console.WriteLine("Введите 2 чтобы вернуть на начало");
-            string str = Console.ReadLine();
-            switch (str)
-            {
-                case "1":
-                    Console.WriteLine("Введите новый символ");
-                    string t = Console.ReadLine();
-                    if (t[0] != ' ') me.Skin = t[0];
-                    break;
-                case "2":
-                    exit = true;
-                    break;
-                default:
-                    break;
-            }
-        }
-
-    }
-
-    private void ColorChange(ref User me) {
-    
-        bool exit = false;
-        while (exit != true)
-        {
-            Console.Clear();
-            Console.WriteLine("Введите 1 чтобы сменить цвет");
-            Console.WriteLine("Введите 2 чтобы вернуться на начало");
-            string str = Console.ReadLine();
-
-            switch (str)
-            {
-                case "1":
-                    Console.WriteLine("Введите число от 1 до 15");
-                    int color;
-                    try { color = Convert.ToInt16(Console.ReadLine()); } catch { color = 1; };
-                    ConsoleColor cColor = (ConsoleColor)(color < 1 ? 1 : (color > 15 ? 15 : color));
-                    me.Color = cColor;
-                    break;
-                case "2":
-                    exit = true;
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-    
-
-    public UserConsole(ref User me) {
-
-        Console.Clear();
-
-        bool exit = false;
-        while (exit != true)
-        {
-            Console.WriteLine("Введите 1 чтобы поменять символ");
-            Console.WriteLine("Введите 2 чтобы поменять цвет");
-            Console.WriteLine("Введите 3 чтобы закрыть консоль");
-            string str = Console.ReadLine();
-
-            switch (str)
-            {
-                case "1":
-                    ChangeSymbol(ref me);
-                    break;
-                case "2":
-                    ColorChange(ref me);
-                    break;
-                case "3":
-                    exit = true;
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-}
+using System.Collections.Specialized;
 
 
 //List players near map
@@ -211,10 +22,13 @@ interface IPlayers
     {
         Console.SetCursorPosition(Map.width + 1, count);
         if (count == 1) Console.Write("(you) ");
-
-        if (player.Skin != ' ') Console.WriteLine($"{player.name} - Skin: {player.Skin}, Color - {player.Color}");
-        else Console.WriteLine("                                                                                                                            ");
-
+        string str = "";
+        if (player.Skin != '#') Console.WriteLine($"{player.name} - Skin: {player.Skin}, Color - {player.Color}, X - {player.X} Y - {player.Y}");
+        else
+        {
+            for (int i = 0; i < player.name.Length + 23; i++) str += " ";
+            Console.WriteLine(str);
+        }
     }
 }
 
@@ -237,9 +51,14 @@ class Client
     {
         Console.SetCursorPosition(Map.width + 1, count);
         if (count == 1) Console.Write("(you) ");
+        string str = "";
+        if (player.Skin != '#') Console.WriteLine($"{player.name} - Skin: {player.Skin}, Color - {player.Color}, X - {player.X}, Y - {player.Y}  ");
+        else
+        {
+            for (int i = 0; i < player.name.Length + 40; i++) str += " ";
+            Console.WriteLine(str);
+        }
 
-        if (player.Skin != ' ') Console.WriteLine($"{player.name} - Skin: {player.Skin}, Color - {player.Color}");
-        else Console.WriteLine(" ");
     }
 
     public static void WriteCurrentPosition(User user)
@@ -272,20 +91,23 @@ class Client
                 bool isContain = false;
                 for (int i = 0; i < Users.Count; i++)
                 {
-                    PlayersOut(user, i + 1);
-                    if (Users[i].Id == user.Id && (user.X == -1 && user.Y == -1 && user.Skin == ' '))
-                    {
-                        Users.RemoveAt(i);
-                        break;                      
-                    }
-
                     if (Users[i].Id == user.Id)
                     {
-                        if (OpenConsole == false) ClearPreviousPosition(Users[i]);
-                        Users[i] = user;
-                        if (OpenConsole == false) WriteCurrentPosition(Users[i]);
-                        isContain = true;
-                        break;
+                        PlayersOut(user, i + 1);
+
+                        if (user.X == -1 && user.Y == -1 && user.Skin == ' ')
+                        {
+                            Users.RemoveAt(i);
+                            break;                      
+                        }
+                        else
+                        {
+                            if (OpenConsole == false) ClearPreviousPosition(Users[i]);
+                            Users[i] = user;
+                            if (OpenConsole == false) WriteCurrentPosition(Users[i]);
+                            isContain = true;
+                            break;
+                        }
                     }
                 }
                 if (!isContain)
@@ -413,7 +235,7 @@ class Client
     {
         TcpClient tcpClient = new TcpClient();
 
-        await tcpClient.ConnectAsync(IPAddress.Parse("26.136.90.213"), 9010);
+        await tcpClient.ConnectAsync(IPAddress.Parse("26.64.111.48"), 9010);
 
         await Console.Out.WriteLineAsync("Connected..");
 

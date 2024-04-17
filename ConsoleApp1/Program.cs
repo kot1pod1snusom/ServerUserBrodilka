@@ -95,19 +95,19 @@ class Client
                     {
                         PlayersOut(user, i + 1);
 
-                        if (user.X == -1 && user.Y == -1 && user.Skin == ' ')
+                        if (user.X == 0 && user.Y == 0 && user.Skin == ' ')
                         {
                             Users.RemoveAt(i);
-                            break;                      
-                        }
-                        else
-                        {
-                            if (OpenConsole == false) ClearPreviousPosition(Users[i]);
-                            Users[i] = user;
-                            if (OpenConsole == false) WriteCurrentPosition(Users[i]);
-                            isContain = true;
                             break;
                         }
+                       
+                        
+                        if (OpenConsole == false) ClearPreviousPosition(Users[i]);
+                        Users[i] = user;
+                        if (OpenConsole == false) WriteCurrentPosition(Users[i]);
+                        isContain = true;
+                        break;
+                       
                     }
                 }
                 if (!isContain)

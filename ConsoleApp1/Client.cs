@@ -14,25 +14,6 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Collections.Specialized;
 
-
-//List players near map
-interface IPlayers
-{
-    public void PlayersOut(User player, int count)
-    {
-        Console.SetCursorPosition(Map.width + 1, count);
-        if (count == 1) Console.Write("(you) ");
-        string str = "";
-        if (player.Skin != '#') Console.WriteLine($"{player.name} - Skin: {player.Skin}, Color - {player.Color}, X - {player.X} Y - {player.Y}");
-        else
-        {
-            for (int i = 0; i < player.name.Length + 23; i++) str += " ";
-            Console.WriteLine(str);
-        }
-    }
-}
-
-
 class Client
 {
     private static bool OpenConsole = false;
@@ -50,16 +31,21 @@ class Client
     public static void PlayersOut(User player, int count)
     {
         Console.SetCursorPosition(Map.width + 1, count);
+
         if (count == 1) Console.Write("(you) ");
         string str = "";
-        if (player.Skin != '#') Console.WriteLine($"{player.name} - Skin: {player.Skin}, Color - {player.Color}, X - {player.X}, Y - {player.Y}  ");
+        if (player.Skin != '#') Console.WriteLine($"" +
+            $"{player.name}," +
+            $" Skin: {player.Skin}," +
+            $" Color - {player.Color}, " +
+            $"X - {player.X}, " +
+            $"Y - {player.Y}  ");
         else
         {
             for (int i = 0; i < player.name.Length + 40; i++) str += " ";
             Console.WriteLine(str);
         }
-
-    }
+    }  
 
     public static void WriteCurrentPosition(User user)
     {
@@ -70,21 +56,18 @@ class Client
 
     public static async Task GetMessage(TcpClient client)
     {
-        var stream = client.GetStream();
-        List<byte> bytes = new List<byte>();
+        string str = ServerUser.GetString(client);
+        List<User> tempList = Newtonsoft.Json.JsonConvert.DeserializeObject<List<User>>(str);
+        for (int i = 0; i < tempList.Count; i++)
+        {
+            PlayersOut(Users[i], i + 1);
+        }
+
         try
         {
             while (CloseGameOrNot != true)
             {
-                int bytes_read = 0;
-
-                while ((bytes_read = stream.ReadByte()) != '\0')
-                {
-                    bytes.Add((byte)bytes_read);
-                }
-
-                string userJson = Encoding.UTF8.GetString(bytes.ToArray());
-
+                string userJson = ServerUser.GetString(client);
 
 
                 User user = Newtonsoft.Json.JsonConvert.DeserializeObject<User>(userJson);
@@ -115,7 +98,6 @@ class Client
                     Users.Add(user);
                     if (OpenConsole == false) WriteCurrentPosition(user);
                 }
-                bytes.Clear();
             }
 
         }
@@ -133,7 +115,6 @@ class Client
     {
         var stream = client.GetStream();
         string jsonUser = Newtonsoft.Json.JsonConvert.SerializeObject(me);
-
 
         if (jsonUser != null)
         {
@@ -235,7 +216,7 @@ class Client
     {
         TcpClient tcpClient = new TcpClient();
 
-        await tcpClient.ConnectAsync(IPAddress.Parse("26.64.111.48"), 9010);
+        await tcpClient.ConnectAsync(IPAddress.Parse("26.136.90.213"), 9010);
 
         await Console.Out.WriteLineAsync("Connected..");
 
@@ -312,20 +293,10 @@ class Client
                     continue;
                 }
 
-                string ToUs = Newtonsoft.Json.JsonConvert.SerializeObject(user);
-                ToUs += '\0';
-                byte[] bytes1 = Encoding.UTF8.GetBytes(ToUs);
-                await st.WriteAsync(bytes1);
 
+                ServerUser.SendClass<User>(client, user);
 
-                int bytes_read = 0;
-                List<byte> bt = new List<byte>();
-                while ((bytes_read = st.ReadByte()) != '\0')
-                {
-                    bt.Add((byte)bytes_read);
-                }
-                string temp = Encoding.UTF8.GetString(bt.ToArray());
-                user = Newtonsoft.Json.JsonConvert.DeserializeObject<User>(temp);
+                user = Newtonsoft.Json.JsonConvert.DeserializeObject<User>(ServerUser.GetString(client));
 
 
                 if (user.statusLogin == User.LoginStatus.LogIn)

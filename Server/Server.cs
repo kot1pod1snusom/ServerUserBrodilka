@@ -3,6 +3,7 @@ using System.Net;
 using System.Text;
 using System.IO;
 using System;
+
 using Newtonsoft;
 using Newtonsoft.Json.Converters;
 using System.Runtime.Intrinsics.Arm;
@@ -14,6 +15,7 @@ using System.Data;
 using System.Security.Claims;
 using System.Diagnostics;
 using System.Net.WebSockets;
+using Newtonsoft.Json;
 
 class UserClient
 {
@@ -93,21 +95,25 @@ class Server
             OnlinePlayersCount = Clients.Count;
         }
 
+        string ClientsString = "[";
+        for (int i = 0; i < Clients.Count; i++)
+        {
+            ClientsString += Newtonsoft.Json.JsonConvert.SerializeObject(Clients[i].user);
+            if (i != 0 && i != Clients.Count - 1)
+            {
+                ClientsString += ',';
+            }
+        }
+        ClientsString += "]";
+        string temp = Newtonsoft.Json.JsonConvert.SerializeObject(AllUsers);
+        ServerUser.SendString(client, ClientsString);
+
         bool UserOnServer = true;
         while (UserOnServer)
         {
             try
             {
-                var stream = client.GetStream();
-                List<byte> bytes = new List<byte>();
-                int bytesRead = 0;
-
-                while ((bytesRead = stream.ReadByte()) != '\0')
-                {
-                    bytes.Add((byte)bytesRead);
-                }
-                bytes.Add((byte)'\0');
-
+                List<byte> bytes = ServerUser.GetBytes(client);
                 User user = Newtonsoft.Json.JsonConvert.DeserializeObject<User>(Encoding.UTF8.GetString(bytes.ToArray()));
                 Console.WriteLine($"{Encoding.UTF8.GetString(bytes.ToArray())}");
 
@@ -167,7 +173,7 @@ class Server
 
     public static async Task Main(string[] args)
     {
-        TcpListener tcpListener = new TcpListener(IPAddress.Parse("26.64.111.48"), 9010);
+        TcpListener tcpListener = new TcpListener(IPAddress.Parse("26.136.90.213"), 9010);
         tcpListener.Start();
 
         Console.WriteLine("Server started..");
@@ -204,27 +210,19 @@ class Server
 
         async Task Registr(TcpClient client)
         {
-            var st = client.GetStream();
 
             User user = new User();
             bool logIn = false;
             while (logIn != true)
             {
-                //Чтение данных от пользователя с данными регистрации
-                int bytes_read = 0;
-                List<byte> bytes = new List<byte>();
-                while ((bytes_read = st.ReadByte()) != '\0')
-                {
-                    bytes.Add((byte)bytes_read);
-                }
-                string temp = Encoding.UTF8.GetString(bytes.ToArray());
+                string temp = ServerUser.GetString(client);
                 user = Newtonsoft.Json.JsonConvert.DeserializeObject<User>(temp);
 
 
                 int count = 0;
                 for (int i = 0; i < AllUsers.Count; i++)
                 {
-                    //База данных не обновляется из-за чего он и пускает на сервер двух одинаковых пользователей
+                    
                     if (AllUsers[i].email == user.email && AllUsers[i].password == user.password)
                     {
                         if (user.NewPlayerOrNot == false)
@@ -296,13 +294,9 @@ class Server
                     }
                 }
 
-
-                string ToUs = Newtonsoft.Json.JsonConvert.SerializeObject(user) + '\0';
-                byte[] bytes1 = Encoding.UTF8.GetBytes(ToUs);
-                await st.WriteAsync(bytes1);
+                ServerUser.SendClass<User>(client, user);
             }
             PutUsersInFile();
-            //st.Close();
         }
     }
 }

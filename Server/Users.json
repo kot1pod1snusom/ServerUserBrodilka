@@ -1,0 +1,16 @@
+[
+  {
+    "OnServerStatus": 0,
+    "statusLogin": 0,
+    "name": "test",
+    "email": "test",
+    "NewPlayerOrNot": false,
+    "password": "7b3d979ca8330a94fa7e9e1b466d8b99e0bcdea1ec90596c0dcc8d7ef6b4300c",
+    "status": 0,
+    "Skin": "x",
+    "Id": -1,
+    "Color": 4,
+    "X": 5,
+    "Y": 5
+  }
+]

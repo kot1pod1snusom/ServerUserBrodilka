@@ -86,27 +86,23 @@ class Server
     public static List<UserClient> Clients = new List<UserClient>();
     public static List<User> AllUsers = new List<User>();
     private static int OnlinePlayersCount = 0;
-    private static readonly object lockObject = new object(); 
+    private static readonly object lockObject = new object();
 
     public static async Task ProcessClient(TcpClient client)
     {
-        lock (lockObject) 
+        lock (lockObject)
         {
             OnlinePlayersCount = Clients.Count;
         }
 
-        string ClientsString = "[";
+        /*string ClientsString = "";
+        List<User> temp = new List<User>();
         for (int i = 0; i < Clients.Count; i++)
         {
-            ClientsString += Newtonsoft.Json.JsonConvert.SerializeObject(Clients[i].user);
-            if (i != 0 && i != Clients.Count - 1)
-            {
-                ClientsString += ',';
-            }
+            temp.Add(Clients[i].user);
         }
-        ClientsString += "]";
-        string temp = Newtonsoft.Json.JsonConvert.SerializeObject(AllUsers);
-        ServerUser.SendString(client, ClientsString);
+        ClientsString = Newtonsoft.Json.JsonConvert.SerializeObject(temp);
+        ServerUser.SendString(client, ClientsString);*/
 
         bool UserOnServer = true;
         while (UserOnServer)
@@ -119,7 +115,7 @@ class Server
 
                 if (user.OnServerStatus == User.OflineOnlineStatus.Offline)
                 {
-                    lock (lockObject)  {
+                    lock (lockObject) {
                         for (int i = 0; i < Clients.Count; i++)
                         {
                             if (Clients[i].user.Id == user.Id)
@@ -128,16 +124,22 @@ class Server
                                 OnlinePlayersCount--;
                                 PutUsersInFile();
                                 UserOnServer = false;
-                                break;                            
+                                break;
                             }
                         }
                     }
                 }
 
-                lock (lockObject) 
+                lock (lockObject)
                 {
                     for (int i = 0; i < Clients.Count; i++)
                     {
+                        if (Clients[i].user.Id == user.Id)
+                        {
+                            Clients[i].user = user;
+                        }
+
+
                         if (client.Connected)
                         {
                             var sendMessageStream = Clients[i].tcpClient.GetStream();
@@ -169,7 +171,15 @@ class Server
     }
 
 
-
+    public static void SendClientsListToUser(TcpClient tcpClient) {
+        List<User> temp = new List<User>();
+        for (int i = 0; i < Clients.Count; i++)
+        {
+            temp.Add(Clients[i].user);
+        }
+        string str = Newtonsoft.Json.JsonConvert.SerializeObject(temp);
+        ServerUser.SendString(tcpClient, str);
+    }
 
     public static async Task Main(string[] args)
     {
@@ -191,8 +201,10 @@ class Server
 
                 Registr(tcpClient);
                 us.OnServerStatus = User.OflineOnlineStatus.OnServer;
-                PutUsersInFile();
 
+
+                SendClientsListToUser(tcpClient);
+                PutUsersInFile();
                 Clients.Add(new UserClient() { tcpClient = tcpClient,user = us,});
                 _ = Task.Run(async () => await ProcessClient(Clients[Clients.Count - 1].tcpClient));
 

@@ -56,19 +56,12 @@ class Client
 
     public static async Task GetMessage(TcpClient client)
     {
-        string str = ServerUser.GetString(client);
-        List<User> tempList = Newtonsoft.Json.JsonConvert.DeserializeObject<List<User>>(str);
-        for (int i = 0; i < tempList.Count; i++)
-        {
-            PlayersOut(Users[i], i + 1);
-        }
-
         try
         {
             while (CloseGameOrNot != true)
             {
-                string userJson = ServerUser.GetString(client);
 
+                string userJson = ServerUser.GetString(client);
 
                 User user = Newtonsoft.Json.JsonConvert.DeserializeObject<User>(userJson);
                 bool isContain = false;
@@ -212,6 +205,23 @@ class Client
             return true;
         }
     }
+
+    public static void GetUsersListFromServer(TcpClient tcpClient, User user)
+    {
+        string str = ServerUser.GetString(tcpClient);
+        Users = Newtonsoft.Json.JsonConvert.DeserializeObject<List<User>>(str);
+        Users.Insert(0, user);
+    }
+
+    public static void OutAllUsers()
+    {
+        for (int i = 0; i < Users.Count; i++)
+        {
+            WriteCurrentPosition(Users[i]);
+            PlayersOut(Users[i],i + 1);
+        }
+    }
+
     public static async Task Main(string[] args)
     {
         TcpClient tcpClient = new TcpClient();
@@ -223,29 +233,23 @@ class Client
         User user = new User();
 
         Registr(tcpClient);
-        await Console.Out.WriteAsync("Input symbol ");
-
-        char symb = Console.ReadLine()[0];
-
-        await Console.Out.WriteLineAsync("Input color (1 - 15)");
-        int color = Convert.ToInt32(Console.ReadLine());
-        
-        ConsoleColor cColor = (ConsoleColor)(color < 1 ? 1 : (color > 15 ? 15 : color));
 
 
-        user.Color = cColor;
-        user.Skin = symb;
+       
         user.X = 10;
         user.Y = 10;
         user.OnServerStatus = User.OflineOnlineStatus.OnServer;
 
         Console.Clear();
-        Users.Add(user);
+
+        GetUsersListFromServer(tcpClient, user);
+
         Map.GenerateMap(20, 20);
         Map.OutputField();
         Console.WriteLine(' ');
         Console.WriteLine("Нажмите Enter чтобы открыть консоль");
         Console.WriteLine("Нажмите Esc чтобы выйти из игры");
+        OutAllUsers();
 
 
         _ = Task.Run(async () => await GetMessage(tcpClient));
@@ -278,6 +282,11 @@ class Client
                     user.password = Console.ReadLine();
                     Console.WriteLine("Введи имя аккаунта");
                     user.name = Console.ReadLine();
+                    Console.WriteLine("Введите ваш цвет (1 - 15)");
+                    int color = Convert.ToInt32(Console.ReadLine());
+                    user.Color = (ConsoleColor)(color < 1 ? 1 : (color > 15 ? 15 : color));
+                    Console.WriteLine("Введите символ, которым будете играть");
+                    user.Skin = Console.ReadLine()[0];
                     user.NewPlayerOrNot = true;
                 }
                 else if (te == 2)

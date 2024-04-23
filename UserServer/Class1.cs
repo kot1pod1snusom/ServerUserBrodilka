@@ -13,6 +13,7 @@ public static class ServerUser
         string JsonString = Newtonsoft.Json.JsonConvert.SerializeObject(cl) + '\0';
         byte[] bytes1 = Encoding.UTF8.GetBytes(JsonString);
         st.WriteAsync(bytes1);
+
     }
 
     public static void SendString(TcpClient client, string str)
@@ -39,18 +40,26 @@ public static class ServerUser
 
     public static string GetString(TcpClient client)
     {
-        var stream = client.GetStream();
-        List<byte> bytes = new List<byte>();
-        int bytesRead = 0;
-
-        while ((bytesRead = stream.ReadByte()) != '\0')
+        try
         {
-            bytes.Add((byte)bytesRead);
-        }
-        bytes.Add((byte)'\0');
+            var stream = client.GetStream();
+            List<byte> bytes = new List<byte>();
+            int bytesRead = 0;
 
-        string str = Encoding.UTF8.GetString(bytes.ToArray());
-        return str;
+            while ((bytesRead = stream.ReadByte()) != '\0')
+            {
+                bytes.Add((byte)bytesRead);
+            }
+            bytes.Add((byte)'\0');
+
+            string str = Encoding.UTF8.GetString(bytes.ToArray());
+            return str;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 }
 
